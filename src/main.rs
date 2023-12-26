@@ -82,11 +82,15 @@ fn main() -> io::Result<()> {
 }
 
 // Print the usage information.
-// TODO: Make this more comprehensive.
+// TODO: Be sure to update this if the usage changes.
 fn usage() -> () {
+    println!("Fencat will read a FEN string from a file or stdin and print the chessboard.");
+    println!("The FEN first FEN string found will be used.");
     println!("Usage: fencat (--flip) [FILE]");
     println!("Example: echo rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR | fencat");
     println!("Example: fencat fen.txt");
+    println!("Example: fencat < fen.txt");
+    println!("Example: fencat --flip fen.txt");
 }
 
 // Split the FEN string into lines.
