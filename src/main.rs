@@ -12,9 +12,10 @@
 use regex::Regex;
 use std::{env, io};
 
-// Currently only cares about the board position.
+// Currently only cares about the board position and active color.
+// TODO: Flip the board based on the active color.
 // See: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation#Definition
-const FEN_REGEX: &str = r"([rnbqkpRNBQKP1-8]+\/){7}([rnbqkpRNBQKP1-8]+)";
+const FEN_REGEX: &str = r"([rnbqkpRNBQKP1-8]+\/){7}([rnbqkpRNBQKP1-8]+)\s*([bw])?";
 
 // ANSI escape codes for colors.
 // TODO: Make these configurable. Readability is important. Maybe use preset color schemes?
@@ -57,6 +58,17 @@ fn main() -> io::Result<()> {
         false
     };
 
+    let active_color = match Regex::captures(&Regex::new(&FEN_REGEX).unwrap(), fen.as_str())
+        .unwrap() // Safe to unwrap because we know the regex matches.
+        .get(3) {
+        Some(color) => match color.as_str() {
+            "w" => "White",
+            "b" => "Black",
+            _ => "Unknown", // Should never happen because the regex only matches w and b.
+        },
+        None => "Unknown",
+    };
+
     // Split the FEN string into lines.
     let board_lines = split_fen(fen);
 
@@ -78,6 +90,9 @@ fn main() -> io::Result<()> {
         }
         println!("   a  b  c  d  e  f  g  h");
     }
+
+    println!("Active color: {}", active_color);
+
     Ok(())
 }
 
@@ -97,16 +112,14 @@ fn usage() -> () {
 // Takes the whole string and extracts the board through a regex.
 // Garbage before and after the board is ignored.
 fn split_fen(fen: String) -> Vec<String> {
-    let stripped_fen = Regex::captures(&Regex::new(&FEN_REGEX).unwrap(), fen.as_str())
-        .unwrap() // Safe to unwrap because we know the regex matches.
-        .get(0) // Get the first match.
-        .unwrap() // Safe to unwrap because we know the regex matches.
-        .as_str() // Get the string from the match.
-        .to_string(); // Convert the string slice to a String.
-
-    // Split the string into chessboard ranks and turn them into Strings.
-    // We can't return a str because the size if not known at compile time.
-    stripped_fen.split("/").map(|s| s.to_string()).collect()
+    // Split the FEN string into whitespace,
+    // Take the first part (the board),
+    // Split the board into lines by the "/",
+    // Collect the lines into a vector.
+    fen.split_whitespace()
+        .take(1).collect::<Vec<&str>>().join("") // Take the first part (the board).
+        .split("/").take(8) // Take the first 8 lines. Should only be 8.
+        .map(|s| s.to_string()).collect() // Turn the lines into Strings and collect.
 }
 
 // Convert a line of FEN to a line of chessboard.
