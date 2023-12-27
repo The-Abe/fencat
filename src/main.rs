@@ -2,18 +2,15 @@
 // Author:       Abe van der Wielen <info@avdw.dev>
 // Github:       github.com/the-abe/fencat
 // Description:  A simple FEN viewer.
-// Usage:        fencat (--flip) [FILE]
 // Example:      echo rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR | fencat
 // Example:      fencat fen.txt
 // TODO:         Add support for FEN strings with move counters.
 // TODO:         Add support for FEN strings with castling availability.
-// TODO:         Add support for FEN strings with color to move.
 
 use regex::Regex;
 use std::{env, io};
 
 // Currently only cares about the board position and active color.
-// TODO: Flip the board based on the active color.
 // See: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation#Definition
 const FEN_REGEX: &str = r"([rnbqkpRNBQKP1-8]+\/){7}([rnbqkpRNBQKP1-8]+)\s*([bw])?";
 
@@ -51,13 +48,6 @@ fn main() -> io::Result<()> {
         std::process::exit(1);
     }
 
-    // Set flip if --flip is passed as an argument.
-    let flip = if args.len() > 1 {
-        args[1] == "--flip" || args[1] == "-f"
-    } else {
-        false
-    };
-
     let active_color = match Regex::captures(&Regex::new(&FEN_REGEX).unwrap(), fen.as_str())
         .unwrap() // Safe to unwrap because we know the regex matches.
         .get(3) {
@@ -69,11 +59,14 @@ fn main() -> io::Result<()> {
         None => "Unknown",
     };
 
+    // TODO: Override active color flipping with a command line flag.
+    let flip = active_color == "Black";
+
     // Split the FEN string into lines.
     let board_lines = split_fen(fen);
 
     // Print the board in the correct orientation.
-    // Orientation is determined by the flip argument and changes:
+    // Orientation is determined by the active color argument and changes:
     //  - The order of the lines.
     //  - The order of the characters in each line.
     //  - The numbering of the ranks and files.
@@ -101,11 +94,10 @@ fn main() -> io::Result<()> {
 fn usage() -> () {
     println!("Fencat will read a FEN string from a file or stdin and print the chessboard.");
     println!("The FEN first FEN string found will be used.");
-    println!("Usage: fencat (--flip) [FILE]");
+    println!("Usage: fencat [FILE]");
     println!("Example: echo rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR | fencat");
     println!("Example: fencat fen.txt");
     println!("Example: fencat < fen.txt");
-    println!("Example: fencat --flip fen.txt");
 }
 
 // Split the FEN string into lines.
